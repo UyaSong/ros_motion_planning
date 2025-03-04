@@ -12,10 +12,10 @@ add_path_to_bashrc() {
     if echo "$$ENV_PATH_NAME" | grep -q "$TARGET_PATH"; then
         echo "$TARGET_PATH exists in $$ENV_PATH_NAME."
     else
-        if grep -q "export $ENV_PATH_NAME=.*$TARGET_PATH" ~/.bashrc; then
+        if grep -q "export $ENV_PATH_NAME=.*$TARGET_PATH" ~/.zshrc; then
             echo "$TARGET_PATH has been set."
         else
-            echo "export $ENV_PATH_NAME=\$$ENV_PATH_NAME:$TARGET_PATH" >> ~/.bashrc
+            echo "export $ENV_PATH_NAME=\$$ENV_PATH_NAME:$TARGET_PATH" >> ~/.zshrc
             echo "$TARGET_PATH is set."
         fi
     fi

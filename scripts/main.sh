@@ -1,3 +1,3 @@
-source ../devel/setup.bash
+source ../devel/setup.zsh
 python ../src/plugins/dynamic_xml_config/main_generate.py user_config.yaml
 roslaunch sim_env main.launch
