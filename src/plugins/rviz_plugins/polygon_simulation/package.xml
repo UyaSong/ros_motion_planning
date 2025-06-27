@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>polygon_simulation</name>
+    <version>0.0.0</version>
+    <description>Rviz polygon simulation tool</description>
+    <maintainer email="913982779@qq.com">Winter</maintainer>
+    <license>TODO</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <depend>roscpp</depend>
+    <depend>pluginlib</depend>
+    <depend>geometry_msgs</depend>
+    <depend>actionlib_msgs</depend>
+    <depend>rviz</depend>
+    <depend>std_msgs</depend>
+    <depend>message_generation</depend>
+    <depend>message_runtime</depend>
+
+    <export>
+        <rviz plugin="${prefix}/polygon_simulation_plugin.xml"/>
+    </export>
+</package>

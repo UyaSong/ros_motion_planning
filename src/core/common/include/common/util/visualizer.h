@@ -17,23 +17,16 @@
 #ifndef RMP_COMMON_UTIL_VISUALIZER_H_
 #define RMP_COMMON_UTIL_VISUALIZER_H_
 
+#include <ros/ros.h>
+#include <costmap_2d/costmap_2d.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_msgs/ColorRGBA.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
 
 #include "common/geometry/point.h"
 #include "common/structure/singleton.h"
-
-namespace ros
-{
-class Publisher;
-}
-
-namespace costmap_2d
-{
-class Costmap2D;
-}
 
 namespace rmp
 {
@@ -67,15 +60,17 @@ public:
     gui_plan.header.stamp = ros::Time::now();
     for (unsigned int i = 0; i < plan.size(); i++)
     {
+      tf2::Quaternion q;
+      q.setRPY(0.0, 0.0, plan[i].theta());
       gui_plan.poses[i].header.stamp = ros::Time::now();
       gui_plan.poses[i].header.frame_id = frame_id;
       gui_plan.poses[i].pose.position.x = plan[i].x();
       gui_plan.poses[i].pose.position.y = plan[i].y();
       gui_plan.poses[i].pose.position.z = 0.0;
-      gui_plan.poses[i].pose.orientation.x = 0.0;
-      gui_plan.poses[i].pose.orientation.y = 0.0;
-      gui_plan.poses[i].pose.orientation.z = 0.0;
-      gui_plan.poses[i].pose.orientation.w = 1.0;
+      gui_plan.poses[i].pose.orientation.x = q.getX();
+      gui_plan.poses[i].pose.orientation.y = q.getY();
+      gui_plan.poses[i].pose.orientation.z = q.getZ();
+      gui_plan.poses[i].pose.orientation.w = q.getW();
     }
 
     publisher.publish(gui_plan);
@@ -109,7 +104,7 @@ public:
     }
 
     auto grid2index = [&](const Point3d& pt) {
-      return static_cast<int>(pt.x()) + static_cast<int>(grid.info.width * pt.y());
+      return static_cast<int>(pt.x()) + static_cast<int>(grid.info.width) * static_cast<int>(pt.y());
     };
 
     for (const auto& pt : expand)
@@ -128,50 +123,106 @@ public:
                             const std::string& ns, std_msgs::ColorRGBA color = RED, double scale = 0.2,
                             int type = SPHERE)
   {
-    int cnt = 0;
-    visualization_msgs::MarkerArray sphere_array;
-    decltype(visualization_msgs::Marker::SPHERE) marker_type;
-    if (type == SPHERE)
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time::now();
+    marker.ns = ns;
+    marker.id = 0;
+
+    switch (type)
     {
-      marker_type = visualization_msgs::Marker::SPHERE;
+      case CUBE:
+        marker.type = visualization_msgs::Marker::CUBE_LIST;
+        break;
+      case SPHERE:
+      default:
+        marker.type = visualization_msgs::Marker::SPHERE_LIST;
     }
-    else if (type == CUBE)
-    {
-      marker_type = visualization_msgs::Marker::CUBE;
-    }
-    else
-    {
-      marker_type = visualization_msgs::Marker::SPHERE;
-    }
+
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.orientation.w = 1.0;
+
+    marker.scale.x = scale;
+    marker.scale.y = scale;
+    marker.scale.z = scale;
+    marker.color = color;
+
+    marker.points.reserve(points.size());
     for (const auto& pt : points)
     {
-      visualization_msgs::Marker sphere_mark;
-      sphere_mark.header.frame_id = "map";
-      sphere_mark.header.stamp = ros::Time::now();
-      sphere_mark.ns = ns + "_" + "sphere_mark";
-      sphere_mark.id = cnt;
-      sphere_mark.type = marker_type;
-      sphere_mark.action = visualization_msgs::Marker::ADD;
-      sphere_mark.pose.position.x = pt.x();
-      sphere_mark.pose.position.y = pt.y();
-      sphere_mark.pose.position.z = 0.0;
-      sphere_mark.pose.orientation.x = 0.0;
-      sphere_mark.pose.orientation.y = 0.0;
-      sphere_mark.pose.orientation.z = 0.0;
-      sphere_mark.pose.orientation.w = 1.0;
-      sphere_mark.lifetime = ros::Duration(1.0);
-      sphere_mark.scale.x = scale;
-      sphere_mark.scale.y = scale;
-      sphere_mark.scale.z = scale;
-      sphere_mark.color.r = color.r;
-      sphere_mark.color.g = color.g;
-      sphere_mark.color.b = color.b;
-      sphere_mark.color.a = color.a;
-      cnt++;
-      sphere_array.markers.push_back(sphere_mark);
+      geometry_msgs::Point p;
+      p.x = pt.x();
+      p.y = pt.y();
+      p.z = 0.0;
+      marker.points.push_back(p);
     }
-    publisher.publish(sphere_array);
-    sphere_array.markers.clear();
+
+    if (!marker.points.empty())
+    {
+      publisher.publish(marker);
+    }
+  }
+
+  /**
+   * @brief publish circles
+   */
+  template <typename Points>
+  static void publishCircles2d(const Points& points, const std::vector<double> radius, const ros::Publisher& publisher,
+                               const std::string& frame_id, const std::string& ns, std_msgs::ColorRGBA color = RED,
+                               double scale = 0.2)
+  {
+    if (points.empty() || points.size() != radius.size())
+    {
+      ROS_WARN("Invalid input: points(%lu) and radius(%lu) size mismatch", points.size(), radius.size());
+      return;
+    }
+
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time::now();
+    marker.ns = ns;
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.lifetime = ros::Duration(1.0);
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = scale;
+    marker.scale.y = scale;
+    marker.scale.z = scale;
+    marker.color = color;
+
+    const int num_segments = 36;
+    const double delta_theta = 2 * M_PI / num_segments;
+
+    for (size_t i = 0; i < points.size(); ++i)
+    {
+      geometry_msgs::Point center;
+      center.x = points[i].x();
+      center.y = points[i].y();
+      center.z = 0.0;
+      const double r = radius[i];
+
+      for (int j = 0; j < num_segments; ++j)
+      {
+        const double theta = j * delta_theta;
+        const double theta_next = theta + delta_theta;
+
+        geometry_msgs::Point p1, p2;
+        p1.x = center.x + r * cos(theta);
+        p1.y = center.y + r * sin(theta);
+        p1.z = center.z;
+
+        p2.x = center.x + r * cos(theta_next);
+        p2.y = center.y + r * sin(theta_next);
+        p2.z = center.z;
+
+        marker.points.push_back(center);
+        marker.points.push_back(p1);
+        marker.points.push_back(p2);
+      }
+    }
+
+    publisher.publish(marker);
   }
 
   /**
@@ -187,6 +238,7 @@ public:
   static std_msgs::ColorRGBA RED;
   static std_msgs::ColorRGBA DARK_GREEN;
   static std_msgs::ColorRGBA PURPLE;
+  static std_msgs::ColorRGBA LIGHTPURPLE;
   enum MARKER_TYPE
   {
     CUBE = 0,

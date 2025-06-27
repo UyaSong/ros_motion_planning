@@ -1,4 +1,16 @@
 PathPlanner:
+  visibility:
+    # ignore contours below the area threshold
+    contour_area_threshold: 70.0
+    # the maximum difference between the approximate contour and the original contour
+    approx_poly_epsilon: 0.005
+    # inflation radius [pixel]
+    inflation_num: 10
+
+  quartree:
+    # the minimum size of quartree grid
+    box_size_threshold: 5
+
   hybrid_astar:
     # motion model
     # 2 ---- DUBIN

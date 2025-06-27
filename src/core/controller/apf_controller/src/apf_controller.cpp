@@ -16,6 +16,7 @@
  */
 #include <pluginlib/class_list_macros.h>
 
+#include "common/util/log.h"
 #include "controller/apf_controller.h"
 
 PLUGINLIB_EXPORT_CLASS(rmp::controller::APFController, nav_core::BaseLocalPlanner)
@@ -102,10 +103,12 @@ void APFController::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d
     costmap_sub_ = nh.subscribe<nav_msgs::OccupancyGrid>("/move_base/local_costmap/costmap", 10,
                                                          &APFController::publishPotentialMap, this);
 
-    ROS_INFO("APF controller initialized!");
+    R_INFO << "APF controller initialized!";
   }
   else
-    ROS_WARN("APF controller has already been initialized.");
+  {
+    R_WARN << "APF controller has already been initialized.";
+  }
 }
 
 /**
@@ -121,7 +124,7 @@ bool APFController::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_
     return false;
   }
 
-  ROS_INFO("Got new plan");
+  R_INFO << "Got new plan";
 
   // set new plan
   global_plan_.clear();
@@ -154,7 +157,7 @@ bool APFController::isGoalReached()
 
   if (goal_reached_)
   {
-    ROS_INFO("GOAL Reached!");
+    R_INFO << "GOAL Reached!";
     return true;
   }
   return false;
@@ -324,7 +327,8 @@ rmp::common::geometry::Vec2d APFController::getRepulsiveForce()
   double prev_x = costmap_ros_->getCostmap()->getCharMap()[std::max(mx - 1, 0) + nx * my];
   double next_y = costmap_ros_->getCostmap()->getCharMap()[mx + nx * std::min(my + 1, ny - 1)];
   double prev_y = costmap_ros_->getCostmap()->getCharMap()[mx + nx * std::max(my - 1, 0)];
-  rmp::common::geometry::Vec2d grad_dist((next_x - prev_x) / (2.0 * bound_diff), (next_y - prev_y) / (2.0 * bound_diff));
+  rmp::common::geometry::Vec2d grad_dist((next_x - prev_x) / (2.0 * bound_diff),
+                                         (next_y - prev_y) / (2.0 * bound_diff));
 
   rep_force = k * grad_dist;
 

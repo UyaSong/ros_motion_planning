@@ -14,8 +14,9 @@
  *
  * ********************************************************
  */
-
 #include <pluginlib/class_list_macros.h>
+
+#include "common/util/log.h"
 #include "controller/orca_controller.h"
 
 PLUGINLIB_EXPORT_CLASS(rmp::controller::ORCAController, nav_core::BaseLocalPlanner)
@@ -84,12 +85,12 @@ void ORCAController::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2
           nh.subscribe<nav_msgs::Odometry>("/robot" + std::to_string(i + 1) + "/odom", 1,
                                            boost::bind(&ORCAController::odometryCallback, this, _1, i + 1));
       odom_subs_.push_back(odom_sub);
-      ROS_INFO("agent %d, subscribe to agent %d.", agent_id_, i + 1);
+      R_INFO << "agent " << agent_id_ << ", subscribe to agent " << i + 1 << ".";
     }
 
     int spin_cnt = 5 * agent_number_;
     ros::Rate rate(10);
-    ROS_WARN("[ORCA] Waiting for odoms...");
+    R_WARN << "ORCA controller waiting for odoms...";
     while (spin_cnt-- > 0)
     {
       ros::spinOnce();
@@ -102,11 +103,11 @@ void ORCAController::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2
 
     sim_ = new RVO::RVOSimulator();
     initState();
-    ROS_INFO("ORCA Controller initialized!");
+    R_INFO << "ORCA Controller initialized!";
   }
   else
   {
-    ROS_WARN("ORCA Controller has already been initialized.");
+    R_WARN << "ORCA Controller has already been initialized.";
   }
 }
 
@@ -114,16 +115,14 @@ bool ORCAController::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig
 {
   if (!initialized_)
   {
-    ROS_ERROR("This planner has not been initialized");
+    R_ERROR << "This planner has not been initialized";
     return false;
   }
 
-  ROS_INFO("Got new plan");
+  R_INFO << "Got new plan";
 
-  if (first_plan_ || goal_.x() != orig_global_plan.back().pose.position.x ||
-      goal_.y() != orig_global_plan.back().pose.position.y)
+  if (goal_.x() != orig_global_plan.back().pose.position.x || goal_.y() != orig_global_plan.back().pose.position.y)
   {
-    first_plan_ = false;
     goal_ = RVO::Vector2(orig_global_plan.back().pose.position.x, orig_global_plan.back().pose.position.y);
     goal_reached_ = false;
   }
@@ -135,7 +134,7 @@ bool ORCAController::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
   if (!initialized_)
   {
-    ROS_ERROR("This planner has not been initialized");
+    R_ERROR << "This planner has not been initialized";
     return false;
   }
 
@@ -171,13 +170,13 @@ bool ORCAController::isGoalReached()
 {
   if (!initialized_)
   {
-    ROS_ERROR("ORCA Controller has not been initialized");
+    R_ERROR << "ORCA Controller has not been initialized";
     return false;
   }
 
   if (goal_reached_)
   {
-    ROS_INFO("GOAL Reached!");
+    R_INFO << "GOAL Reached!";
     return true;
   }
   return false;
@@ -187,7 +186,7 @@ void ORCAController::initState()
 {
   if (!odom_flag_)
   {
-    ROS_ERROR("Odom not received!");
+    R_ERROR << "Odom not received!";
     return;
   }
 

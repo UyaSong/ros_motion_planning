@@ -1,0 +1,15 @@
+Optimizer:
+  # whether to show debug information
+  debug: false 
+  # the maximum distance to obstacle (m)
+  obs_dist_max: 0.5 
+  # the maximum curvature
+  k_max: 2.5
+  # the weight for obstacle avoidance
+  w_obstacle: 0.015
+  # the weight for smooth
+  w_smooth: 2.0e+6
+  # the weight for curvature
+  w_curvature: 30.0
+  # the weight for distance
+  w_distance: 30.0

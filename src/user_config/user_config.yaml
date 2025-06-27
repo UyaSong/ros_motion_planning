@@ -4,8 +4,10 @@ rviz_file: "sim_env.rviz"
 
 robots_config:
   - robot1_type: "turtlebot3_waffle"
-    robot1_global_planner: "hybrid_astar"
+    robot1_location_method: "amcl"
+    robot1_global_planner: "gradient"
     robot1_local_planner: "rpp"
+    robot1_optimizer: ""
     robot1_x_pos: "0.0"
     robot1_y_pos: "0.0"
     robot1_z_pos: "0.0"
@@ -15,28 +17,34 @@ robots_config:
 #   * graph_planner
 #     * astar
 #     * jps
+#     * bi_jps
 #     * gbfs
 #     * dijkstra
-#     * d_star
+#     * dstar
 #     * lpa_star
-#     * voronoi
-#     * d_star_lite
+#     * dstar_lite
 #     * theta_star
 #     * lazy_theta_star
+#     * s_theta_star
 #     * hybrid_astar
+#     * gradient
 #
+#   * roadmap_planner
+#     * voronoi
+#     * visibility
+#     * quartree
+# 
 #   * sample_planner
 #     * rrt
 #     * rrt_star
-#     * rrt_connect
 #     * informed_rrt
+#     * rrt_connect
 #     * quick_informed_rrt
 #
 #   * evolutionary_planner
 #     * aco
 #     * pso
 #     * ga
-#   * lazy_planner
 #
 # * local planner
 #   * dwa
@@ -45,6 +53,12 @@ robots_config:
 #   * rpp
 #   * lqr
 #   * static
+#
+# * optimizer
+#   * minimumsnap_optimizer
+#   * constrained_optimizer
+#   * conjugate_optimizer
+#   * lbfgs_optimizer
 
 plugins:
   # pedestrians: "pedestrian_config.yaml"

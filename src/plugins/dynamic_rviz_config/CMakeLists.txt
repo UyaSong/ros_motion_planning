@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(dynamic_rviz_config)
 find_package(catkin REQUIRED COMPONENTS
-  rospy
+	roscpp
+	rospy
 )
 
 catkin_package(
-  CATKIN_DEPENDS urdf xacro
+   CATKIN_DEPENDS urdf xacro
 )
 
 catkin_install_python(PROGRAMS

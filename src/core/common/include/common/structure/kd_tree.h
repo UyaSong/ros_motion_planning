@@ -133,9 +133,11 @@ public:
     KnnQueue queue(k);
     _knnSearchRecursive(query, root_, queue, k);
 
-    std::vector<int> indices(queue.size());
-    for (size_t i = 0; i < queue.size(); i++)
+    std::vector<int> indices(k);
+    for (size_t i = 0; i < k; i++)
+    {
       indices[i] = queue[i].second;
+    }
 
     return indices;
   }

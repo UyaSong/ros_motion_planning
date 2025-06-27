@@ -16,6 +16,8 @@
  */
 #include <pluginlib/class_list_macros.h>
 
+#include "common/util/log.h"
+#include "common/util/visualizer.h"
 #include "controller/rpp_controller.h"
 
 PLUGINLIB_EXPORT_CLASS(rmp::controller::RPPController, nav_core::BaseLocalPlanner)
@@ -96,13 +98,13 @@ void RPPController::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d
     nh.param("/move_base/controller_frequency", controller_freqency, 10.0);
     d_t_ = 1 / controller_freqency;
 
-    target_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>("/target_point", 10);
+    target_pt_pub_ = nh.advertise<visualization_msgs::Marker>("/target_point", 1);
     current_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/current_pose", 10);
 
-    ROS_INFO("RPP Controller initialized!");
+    R_INFO << "RPP Controller initialized!";
   }
   else
-    ROS_WARN("RPP Controller has already been initialized.");
+    R_WARN << "RPP Controller has already been initialized.";
 }
 
 /**
@@ -114,11 +116,11 @@ bool RPPController::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_
 {
   if (!initialized_)
   {
-    ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+    R_ERROR << "This planner has not been initialized, please call initialize() before using this planner";
     return false;
   }
 
-  ROS_INFO("Got new plan");
+  R_INFO << "Got new plan";
 
   // set new plan
   global_plan_.clear();
@@ -144,13 +146,13 @@ bool RPPController::isGoalReached()
 {
   if (!initialized_)
   {
-    ROS_ERROR("RPP Controller has not been initialized");
+    R_ERROR << "RPP Controller has not been initialized";
     return false;
   }
 
   if (goal_reached_)
   {
-    ROS_INFO("GOAL Reached!");
+    R_INFO << "GOAL Reached!";
     return true;
   }
   return false;
@@ -165,7 +167,7 @@ bool RPPController::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
   if (!initialized_)
   {
-    ROS_ERROR("RPP Controller has not been initialized");
+    R_ERROR << "RPP Controller has not been initialized";
     return false;
   }
 
@@ -236,8 +238,12 @@ bool RPPController::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     }
   }
 
+  // visualization
+  const auto& visualizer = rmp::common::util::VisualizerPtr::Instance();
   // publish lookahead pose
-  target_pt_pub_.publish(lookahead_pt);
+  rmp::common::geometry::Points3d points;
+  points.emplace_back(lookahead_pt.point.x, lookahead_pt.point.y, lookahead_pt.point.z);
+  visualizer->publishPoints(points, target_pt_pub_, "map", "lookahead", rmp::common::util::Visualizer::RED, 0.3);
 
   // publish robot pose
   current_pose_pub_.publish(robot_pose_map);

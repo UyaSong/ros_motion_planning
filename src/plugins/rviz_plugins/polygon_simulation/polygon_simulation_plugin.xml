@@ -1,0 +1,8 @@
+<library path="lib/libpolygon_simulation">
+  <class name="polygon_simulation/PolygonSimulation" type="rmp::polygon_simulation::PolygonSimulation" base_class_type="rviz::Tool">
+    <description>
+      Rviz tool for collecting a polygon selection boundary
+    </description>
+  </class>
+</library>
+

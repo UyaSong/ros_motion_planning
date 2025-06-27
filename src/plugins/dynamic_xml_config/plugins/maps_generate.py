@@ -69,6 +69,8 @@ class MapsGenerator(XMLGenerator):
 			return "costmap_2d::ObstacleLayer"
 		elif name == "voronoi_layer":
 			return "costmap_2d::VoronoiLayer"
+		elif name == "distance_layer":
+			return "costmap_2d::DistanceLayer"
 		elif name == "inflation_layer":
 			return "costmap_2d::InflationLayer"
 		else:

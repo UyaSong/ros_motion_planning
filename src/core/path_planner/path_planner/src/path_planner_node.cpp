@@ -20,8 +20,17 @@
 // path planner
 #include "path_planner/path_planner_node.h"
 
+// path processor
+#include "path_planner/path_prune/ramer_douglas_peucker.h"
+#include "path_planner/path_smooth/savitzky_golay.h"
+
+// generator
+#include "trajectory_planner/trajectory_generation/cubic_bezier_generator.h"
+
 #include "common/util/log.h"
 #include "common/util/visualizer.h"
+#include "common/geometry/polygon2d.h"
+#include "common/safety_corridor/rectangle_safety_corridor.h"
 
 PLUGINLIB_EXPORT_CLASS(rmp::path_planner::PathPlannerNode, nav_core::BaseGlobalPlanner)
 
@@ -30,6 +39,8 @@ namespace rmp
 namespace path_planner
 {
 using Visualizer = rmp::common::util::Visualizer;
+using namespace rmp::trajectory_generation;
+using namespace rmp::trajectory_optimization;
 
 /**
  * @brief Construct a new Graph Planner object
@@ -91,12 +102,27 @@ void PathPlannerNode::initialize(std::string name)
     g_planner_ = path_planner_props.planner_ptr;
     planner_type_ = path_planner_props.planner_type;
 
+    TrajectoryPlannerFactory::PlannerProps traj_planner_props;
+    if (!TrajectoryPlannerFactory::createPlanner(private_nh, costmap_ros_, traj_planner_props))
+    {
+      R_ERROR << "Create trajectory planner failed.";
+    }
+    optimizer_ = traj_planner_props.traj_optimizer_ptr;
+
+    pruner_ = std::make_shared<RDPPathProcessor>(0.25, 3.5);
+    // pruner_ = std::make_shared<SavitzkyGolayPathProcessor>();
+
+    generator_ = std::make_shared<CubicBezierGenerator>(costmap_ros_, 0.2, 0.3, true, true);
+
     // register planning publisher
     plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
-    points_pub_ = private_nh.advertise<visualization_msgs::MarkerArray>("key_points", 1);
-    lines_pub_ = private_nh.advertise<visualization_msgs::MarkerArray>("safety_corridor", 1);
-    tree_pub_ = private_nh.advertise<visualization_msgs::MarkerArray>("random_tree", 1);
-    particles_pub_ = private_nh.advertise<visualization_msgs::MarkerArray>("particles", 1);
+    traj_pub_ = private_nh.advertise<nav_msgs::Path>("trajectory", 1);
+    plan_opt_pub_ = private_nh.advertise<nav_msgs::Path>("plan_opt", 1);
+    keypoints_pub_ = private_nh.advertise<visualization_msgs::Marker>("key_points", 1);
+    safety_corridor_pub_ = private_nh.advertise<visualization_msgs::Marker>("safety_corridor", 1);
+    random_tree_pub_ = private_nh.advertise<visualization_msgs::Marker>("random_tree", 1);
+    roadmap_pub_ = private_nh.advertise<visualization_msgs::Marker>("roadmap", 1);
+    particles_pub_ = private_nh.advertise<visualization_msgs::Marker>("particles", 1);
 
     // register explorer visualization publisher
     expand_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("expand", 1);
@@ -183,13 +209,48 @@ bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start, const ge
   // convert path to ros plan
   if (path_found)
   {
+    origin_plan[0].setTheta(tf2::getYaw(start.pose.orientation));
+    origin_plan.back().setTheta(tf2::getYaw(goal.pose.orientation));
     if (_getPlanFromPath(origin_plan, plan))
     {
-      geometry_msgs::PoseStamped goalCopy = goal;
-      goalCopy.header.stamp = ros::Time::now();
-      plan.pop_back();
-      plan.push_back(goalCopy);
-      plan[0].pose.orientation = start.pose.orientation;
+      // path process
+      PathPlanner::Points3d prune_plan;
+      pruner_->process(origin_plan, prune_plan);
+
+      // generation
+      PathPlanner::Points3d origin_traj;
+      generator_->setWaypoints(origin_plan);
+      if (generator_->generation())
+      {
+        rmp::common::structure::Trajectory3d traj;
+        if (generator_->getTrajectory(traj))
+        {
+          for (const auto& pt : traj.position)
+          {
+            origin_traj.emplace_back(pt.x(), pt.y(), pt.theta());
+          }
+        }
+        visualizer->publishPlan(origin_traj, traj_pub_, frame_id_);
+      }
+
+      // optimization
+      if (optimizer_ != nullptr)
+      {
+        PathPlanner::Points3d path_opt;
+        if (optimizer_->run(origin_plan))
+        // if (optimizer_->run(origin_traj))
+        {
+          rmp::common::structure::Trajectory3d traj;
+          if (optimizer_->getTrajectory(traj))
+          {
+            for (const auto& pt : traj.position)
+            {
+              path_opt.emplace_back(pt.x(), pt.y(), pt.theta());
+            }
+          }
+          visualizer->publishPlan(path_opt, plan_opt_pub_, frame_id_);
+        }
+      }
 
       // publish visulization plan
       if (is_expand_)
@@ -199,10 +260,9 @@ bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start, const ge
           // publish expand zone
           visualizer->publishExpandZone(expand, costmap_ros_->getCostmap(), expand_pub_, frame_id_);
         }
-        else if (planner_type_ == SAMPLE_PLANNER)
+        else if (planner_type_ == SAMPLE_PLANNER || planner_type_ == ROADMAP_PLANNER)
         {
-          // publish expand tree
-          Visualizer::Lines2d tree_lines;
+          Visualizer::Lines2d lines;
           for (const auto& node : expand)
           {
             // using theta to record parent id element
@@ -213,11 +273,18 @@ bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start, const ge
               g_planner_->index2Grid(node.theta(), px_i, py_i);
               g_planner_->map2World(px_i, py_i, px_d, py_d);
               g_planner_->map2World(node.x(), node.y(), x_d, y_d);
-              tree_lines.emplace_back(
+              lines.emplace_back(
                   std::make_pair<Visualizer::Point2d, Visualizer::Point2d>({ x_d, y_d }, { px_d, py_d }));
             }
           }
-          visualizer->publishLines2d(tree_lines, tree_pub_, frame_id_, "tree", Visualizer::DARK_GREEN, 0.05);
+          if (planner_type_ == SAMPLE_PLANNER)
+          {
+            visualizer->publishLines2d(lines, random_tree_pub_, frame_id_, "tree", Visualizer::DARK_GREEN, 0.05);
+          }
+          else
+          {
+            visualizer->publishLines2d(lines, roadmap_pub_, frame_id_, "roadmap", Visualizer::RED, 0.01);
+          }
         }
         else if (planner_type_ == EVOLUTION_PLANNER)
         {
@@ -239,6 +306,31 @@ bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start, const ge
       }
 
       visualizer->publishPlan(origin_plan, plan_pub_, frame_id_);
+      visualizer->publishPoints(prune_plan, keypoints_pub_, frame_id_, "key_points", Visualizer::PURPLE, 0.15);
+
+      // safety corridor
+      if (show_safety_corridor_)
+      {
+        std::vector<rmp::common::geometry::Polygon2d> polygons;
+
+        auto safety_corridor =
+            std::make_unique<rmp::common::safety_corridor::RectangleSafetyCorridor>(costmap_ros_, 1.5, 200);
+        PathPlanner::Points3d test_plan;
+        safety_corridor->decompose(origin_plan, polygons, test_plan);
+
+        Visualizer::Lines2d lines;
+        for (const auto& polygon : polygons)
+        {
+          for (int i = 0; i < polygon.num_points(); i++)
+          {
+            const auto& pt = polygon.points()[i];
+            const auto& next_pt = polygon.points()[polygon.next(i)];
+            lines.emplace_back(std::make_pair<Visualizer::Point2d, Visualizer::Point2d>({ pt.x(), pt.y() },
+                                                                                        { next_pt.x(), next_pt.y() }));
+          }
+        }
+        visualizer->publishLines2d(lines, safety_corridor_pub_, frame_id_, "safety_corridor", Visualizer::RED, 0.1);
+      }
     }
     else
     {

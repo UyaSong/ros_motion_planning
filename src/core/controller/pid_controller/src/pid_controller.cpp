@@ -16,6 +16,7 @@
  */
 #include <pluginlib/class_list_macros.h>
 
+#include "common/util/log.h"
 #include "controller/pid_controller.h"
 
 PLUGINLIB_EXPORT_CLASS(rmp::controller::PIDController, nav_core::BaseLocalPlanner)
@@ -105,11 +106,11 @@ void PIDController::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d
     target_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/target_pose", 10);
     current_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/current_pose", 10);
 
-    ROS_INFO("PID Controller initialized!");
+    R_INFO << "PID Controller initialized!";
   }
   else
   {
-    ROS_WARN("PID Controller has already been initialized.");
+    R_WARN << "PID Controller has already been initialized.";
   }
 }
 
@@ -122,11 +123,11 @@ bool PIDController::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_
 {
   if (!initialized_)
   {
-    ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+    R_ERROR << "This planner has not been initialized, please call initialize() before using this planner";
     return false;
   }
 
-  ROS_INFO("Got new plan");
+  R_INFO << "Got new plan";
 
   // set new plan
   global_plan_.clear();
@@ -155,13 +156,13 @@ bool PIDController::isGoalReached()
 {
   if (!initialized_)
   {
-    ROS_ERROR("PID Controller has not been initialized");
+    R_ERROR << "PID Controller has not been initialized";
     return false;
   }
 
   if (goal_reached_)
   {
-    ROS_INFO("GOAL Reached!");
+    R_INFO << "GOAL Reached!";
     return true;
   }
   return false;
@@ -176,7 +177,7 @@ bool PIDController::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
   if (!initialized_)
   {
-    ROS_ERROR("PID Controller has not been initialized");
+    R_ERROR << "PID Controller has not been initialized";
     return false;
   }
 

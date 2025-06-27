@@ -25,6 +25,9 @@
 #include "common/geometry/point.h"
 #include "path_planner/path_planner.h"
 #include "path_planner/utils/path_planner_factory.h"
+#include "path_planner/utils/trajectory_planner_factory.h"
+#include "path_planner/path_processor/path_processor.h"
+#include "trajectory_planner/trajectory_generation/generator.h"
 
 namespace rmp
 {
@@ -106,10 +109,13 @@ protected:
   PLANNER_TYPE planner_type_;               // planner type
   std::shared_ptr<PathPlanner> g_planner_;  // global path planner
   ros::Publisher plan_pub_;                 // path planning publisher
+  ros::Publisher traj_pub_;                 // trajectory planning publisher
+  ros::Publisher plan_opt_pub_;             // optimized path planning publisher
   ros::Publisher expand_pub_;               // nodes explorer publisher
-  ros::Publisher points_pub_;               // key-points publisher
-  ros::Publisher lines_pub_;                // polygons publisher
-  ros::Publisher tree_pub_;                 // random search tree publisher
+  ros::Publisher keypoints_pub_;            // key-points publisher
+  ros::Publisher safety_corridor_pub_;      // safety corridor publisher
+  ros::Publisher random_tree_pub_;          // random search tree publisher
+  ros::Publisher roadmap_pub_;              // roadmap publisher
   ros::Publisher particles_pub_;            // evolutionary particles publisher
   ros::ServiceServer make_plan_srv_;        // planning service
 
@@ -118,6 +124,11 @@ private:
   bool is_expand_;             // whether publish expand map or not
   bool show_safety_corridor_;  // whether visualize safety corridor
   double tolerance_;           // tolerance
+
+private:
+  std::shared_ptr<rmp::trajectory_generation::Generator> generator_;
+  std::shared_ptr<rmp::trajectory_optimization::Optimizer> optimizer_;  // trajectory optimizer
+  std::shared_ptr<PathProcessor> pruner_;
 };
 }  // namespace path_planner
 }  // namespace rmp

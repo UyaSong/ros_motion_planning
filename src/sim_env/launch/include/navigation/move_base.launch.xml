@@ -24,6 +24,8 @@
     <arg name="global_planner" default="astar" />
     <!-- local planner name -->
     <arg name="local_planner" default="dwa" />
+    <!-- global path optimizer -->
+    <arg name="optimizer" default="conjugate_optimizer" />
 
     <!-- move base module -->
     <!-- launch-prefix="xterm -e gdb -ex run - -args" -->
@@ -31,6 +33,7 @@
         <!-- global planner plugin -->
         <param name="base_global_planner" value="path_planner/PathPlanner" />
         <param name="PathPlanner/planner_name" value="$(arg global_planner)" />
+        <param name="PathPlanner/optimizer_name" value="$(arg optimizer)" />
 
         <!-- graph search -->
         <rosparam file="$(find sim_env)/config/planner/common_planner_params.yaml" command="load" />
@@ -43,6 +46,8 @@
                     or arg('global_planner')=='dstar'
                     or arg('global_planner')=='lpa_star'
                     or arg('global_planner')=='voronoi'
+                    or arg('global_planner')=='visibility'
+                    or arg('global_planner')=='quartree'
                     or arg('global_planner')=='dstar_lite'
                     or arg('global_planner')=='theta_star'
                     or arg('global_planner')=='lazy_theta_star'
@@ -66,6 +71,10 @@
                     or arg('global_planner')=='pso'
                     or arg('global_planner')=='ga'
                 )" />
+
+        <!-- optimizer -->
+        <rosparam file="$(eval find('sim_env') + '/config/trajectory_optimization/' + arg('optimizer') + '_params.yaml')"
+            command="load" unless="$(eval arg('optimizer')=='')" />
 
         <!-- local planner plugin -->
         <param name="base_local_planner" value="dwa_controller/DWAController" if="$(eval arg('local_planner')=='dwa')" />

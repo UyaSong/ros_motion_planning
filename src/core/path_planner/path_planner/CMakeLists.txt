@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(path_planner)
 
+# SET(CMAKE_BUILD_TYPE "Debug")
+# SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+# SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+
 find_package(catkin REQUIRED COMPONENTS
   angles
   roscpp
@@ -13,12 +17,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   tf2_ros
   voronoi_layer
+  trajectory_planner
   common
+  path_processor
 )
 
 catkin_package(
  INCLUDE_DIRS include
- CATKIN_DEPENDS voronoi_layer common
+ CATKIN_DEPENDS voronoi_layer common path_processor trajectory_planner
 )
 
 include_directories(
@@ -29,6 +35,7 @@ include_directories(
 file(GLOB path_planner_src_files src/*.cpp)
 file(GLOB path_planner_utils_src_files src/utils/*.cpp)
 file(GLOB graph_path_planner_src_files src/graph_planner/*.cpp)
+file(GLOB roadmap_path_planner_src_files src/roadmap_planner/*.cpp)
 file(GLOB sample_path_planner_src_files src/sample_planner/*.cpp)
 file(GLOB evolutionary_path_planner_src_files src/evolutionary_planner/*.cpp)
 
@@ -40,10 +47,13 @@ add_library(${PROJECT_NAME}
   ${path_planner_utils_src_files}
   ${graph_path_planner_hybrid_astar_src_files}
   ${graph_path_planner_src_files}
+  ${roadmap_path_planner_src_files}
   ${sample_path_planner_src_files}
   ${evolutionary_path_planner_src_files}
 )
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
+  trajectory_generation
+  trajectory_optimization
 )

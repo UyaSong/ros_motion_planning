@@ -64,7 +64,7 @@ public:
 
   bool operator!=(const Point2_& other)
   {
-    return !operator==(other);
+    return !(operator==(other));
   }
 
 public:
@@ -124,7 +124,7 @@ public:
 
   bool operator!=(const Point3_& other)
   {
-    return !operator==(other);
+    return !(operator==(other));
   }
 
 public:

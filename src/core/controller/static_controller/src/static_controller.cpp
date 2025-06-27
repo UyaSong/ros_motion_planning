@@ -16,6 +16,7 @@
  */
 #include <pluginlib/class_list_macros.h>
 
+#include "common/util/log.h"
 #include "controller/static_controller.h"
 
 PLUGINLIB_EXPORT_CLASS(rmp::controller::StaticController, nav_core::BaseLocalPlanner)
@@ -60,10 +61,10 @@ void StaticController::initialize(std::string name, tf2_ros::Buffer* tf, costmap
     initialized_ = true;
     ros::NodeHandle nh = ros::NodeHandle("~/" + name);
 
-    ROS_INFO("Static Controller initialized!");
+    R_INFO << "Static Controller initialized!";
   }
   else
-    ROS_WARN("Static Controller has already been initialized.");
+    R_WARN << "Static Controller has already been initialized.";
 }
 
 /**
@@ -75,7 +76,7 @@ bool StaticController::setPlan(const std::vector<geometry_msgs::PoseStamped>& or
 {
   if (!initialized_)
   {
-    ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+    R_ERROR << "This planner has not been initialized, please call initialize() before using this planner";
     return false;
   }
   return true;
@@ -89,13 +90,13 @@ bool StaticController::isGoalReached()
 {
   if (!initialized_)
   {
-    ROS_ERROR("Static Controller has not been initialized");
+    R_ERROR << "Static Controller has not been initialized";
     return false;
   }
 
   if (goal_reached_)
   {
-    ROS_INFO("GOAL Reached!");
+    R_INFO << "GOAL Reached!";
     return true;
   }
   return false;
@@ -110,7 +111,7 @@ bool StaticController::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
   if (!initialized_)
   {
-    ROS_ERROR("Static Controller has not been initialized");
+    R_ERROR << "Static Controller has not been initialized";
     return false;
   }
 

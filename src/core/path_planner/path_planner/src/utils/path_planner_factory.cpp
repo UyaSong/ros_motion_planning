@@ -28,8 +28,11 @@
 #include "path_planner/graph_planner/s_theta_star_planner.h"
 #include "path_planner/graph_planner/lazy_theta_star_planner.h"
 #include "path_planner/graph_planner/hybrid_astar_planner/hybrid_astar_planner.h"
-#include "path_planner/graph_planner/voronoi_planner.h"
+#include "path_planner/graph_planner/gradient_planner.h"
 #include "path_planner/graph_planner/lazy_planner.h"
+
+// roadmap-based planner
+#include "path_planner/roadmap_planner/voronoi_planner.h"
 
 // sample-based planner
 #include "path_planner/sample_planner/rrt_planner.h"
@@ -104,9 +107,8 @@ bool PathPlannerFactory::createPlanner(ros::NodeHandle& nh, costmap_2d::Costmap2
   }
   else if (planner_name == "voronoi")
   {
-    planner_props.planner_ptr = std::make_shared<VoronoiPathPlanner>(
-        costmap_ros, costmap_ros->getLayeredCostmap()->getCircumscribedRadius(), obstacle_factor);
-    planner_props.planner_type = GRAPH_PLANNER;
+    planner_props.planner_ptr = std::make_shared<VoronoiPathPlanner>(costmap_ros, obstacle_factor);
+    planner_props.planner_type = ROADMAP_PLANNER;
   }
   else if (planner_name == "lazy")
   {
@@ -126,6 +128,11 @@ bool PathPlannerFactory::createPlanner(ros::NodeHandle& nh, costmap_2d::Costmap2
   else if (planner_name == "s_theta_star")
   {
     planner_props.planner_ptr = std::make_shared<SThetaStarPathPlanner>(costmap_ros, obstacle_factor);
+    planner_props.planner_type = GRAPH_PLANNER;
+  }
+  else if (planner_name == "gradient")
+  {
+    planner_props.planner_ptr = std::make_shared<GradientPathPlanner>(costmap_ros, obstacle_factor);
     planner_props.planner_type = GRAPH_PLANNER;
   }
   else if (planner_name == "hybrid_astar")

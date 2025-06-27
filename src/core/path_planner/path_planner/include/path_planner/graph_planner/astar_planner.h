@@ -1,7 +1,7 @@
 /**
  * *********************************************************
  *
- * @file: a_star.h
+ * @file: astar_planner.h
  * @brief: Contains the A* (dijkstra and GBFS) planner class
  * @author: Yang Haodong
  * @date: 2023-12-12
@@ -54,10 +54,7 @@ private:
   bool is_gbfs_;      // using greedy best first search(GBFS)
 
   using Node = rmp::common::structure::Node<int>;
-  const std::vector<Node> motions = {
-    { 0, 1, 1.0 },          { 1, 0, 1.0 },           { 0, -1, 1.0 },          { -1, 0, 1.0 },
-    { 1, 1, std::sqrt(2) }, { 1, -1, std::sqrt(2) }, { -1, 1, std::sqrt(2) }, { -1, -1, std::sqrt(2) },
-  };
+  static std::vector<Node> motions_;
 };
 }  // namespace path_planner
 }  // namespace rmp

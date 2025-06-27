@@ -27,6 +27,11 @@ namespace rmp
 {
 namespace path_planner
 {
+std::vector<AStarPathPlanner::Node> AStarPathPlanner::motions_ = {
+  { 0, 1, 1.0 },          { 1, 0, 1.0 },           { 0, -1, 1.0 },          { -1, 0, 1.0 },
+  { 1, 1, std::sqrt(2) }, { 1, -1, std::sqrt(2) }, { -1, 1, std::sqrt(2) }, { -1, -1, std::sqrt(2) },
+};
+
 /**
  * @brief Construct a new AStar object
  * @param costmap   the environment for path planning
@@ -111,7 +116,7 @@ bool AStarPathPlanner::plan(const Point3d& start, const Point3d& goal, Points3d&
     }
 
     // explore neighbor of current node
-    for (const auto& motion : motions)
+    for (const auto& motion : motions_)
     {
       // explore a new node
       auto node_new = current + motion;

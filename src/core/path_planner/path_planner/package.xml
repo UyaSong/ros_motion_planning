@@ -21,7 +21,9 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>voronoi_layer</depend>
+  <depend>trajectory_planner</depend>
   <depend>common</depend>
+  <depend>path_processor</depend>
 
   <export>
     <nav_core plugin="${prefix}/path_planner_plugin.xml" />

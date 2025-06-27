@@ -19,6 +19,8 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <pluginlib/class_list_macros.h>
 
+#include "common/util/log.h"
+#include "common/util/visualizer.h"
 #include "controller/mpc_controller.h"
 
 PLUGINLIB_EXPORT_CLASS(rmp::controller::MPCController, nav_core::BaseLocalPlanner)
@@ -108,14 +110,14 @@ void MPCController::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d
     nh.param("/move_base/controller_frequency", controller_freqency, 10.0);
     d_t_ = 1 / controller_freqency;
 
-    target_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>("/target_point", 10);
+    target_pt_pub_ = nh.advertise<visualization_msgs::Marker>("/target_point", 10);
     current_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/current_pose", 10);
 
-    ROS_INFO("MPC Controller initialized!");
+    R_INFO << "MPC Controller initialized!";
   }
   else
   {
-    ROS_WARN("MPC Controller has already been initialized.");
+    R_WARN << "MPC Controller has already been initialized.";
   }
 }
 
@@ -128,11 +130,11 @@ bool MPCController::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_
 {
   if (!initialized_)
   {
-    ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+    R_ERROR << "This planner has not been initialized, please call initialize() before using this planner";
     return false;
   }
 
-  ROS_INFO("Got new plan");
+  R_INFO << "Got new plan";
 
   // set new plan
   global_plan_.clear();
@@ -158,13 +160,13 @@ bool MPCController::isGoalReached()
 {
   if (!initialized_)
   {
-    ROS_ERROR("MPC Controller has not been initialized");
+    R_ERROR << "MPC Controller has not been initialized";
     return false;
   }
 
   if (goal_reached_)
   {
-    ROS_INFO("GOAL Reached!");
+    R_INFO << "GOAL Reached!";
     return true;
   }
   return false;
@@ -179,7 +181,7 @@ bool MPCController::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
   if (!initialized_)
   {
-    ROS_ERROR("MPC Controller has not been initialized");
+    R_ERROR << "MPC Controller has not been initialized";
     return false;
   }
 
@@ -240,7 +242,10 @@ bool MPCController::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
   }
 
   // publish lookahead pose
-  target_pt_pub_.publish(lookahead_pt);
+  const auto& visualizer = rmp::common::util::VisualizerPtr::Instance();
+  rmp::common::geometry::Points3d points;
+  points.emplace_back(lookahead_pt.point.x, lookahead_pt.point.y, lookahead_pt.point.z);
+  visualizer->publishPoints(points, target_pt_pub_, "map", "lookahead", rmp::common::util::Visualizer::RED, 0.3);
 
   // publish robot pose
   current_pose_pub_.publish(robot_pose_map);
@@ -422,15 +427,9 @@ Eigen::Vector2d MPCController::_mpcControl(Eigen::Vector3d s, Eigen::Vector3d s_
   osqp_solve(work);
   auto status = work->info->status_val;
 
-  if (status < 0)
+  if ((status < 0) || (status != 1 && status != 2))
   {
-    std::cout << "failed optimization status:\t" << work->info->status;
-    return Eigen::Vector2d::Zero();
-  }
-
-  if (status != 1 && status != 2)
-  {
-    std::cout << "failed optimization status:\t" << work->info->status;
+    R_WARN << "failed optimization status: " << work->info->status;
     return Eigen::Vector2d::Zero();
   }
 

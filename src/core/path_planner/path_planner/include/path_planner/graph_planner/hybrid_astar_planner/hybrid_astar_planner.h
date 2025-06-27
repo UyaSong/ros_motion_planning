@@ -20,8 +20,11 @@
 #include "common/geometry/curve/dubins_curve.h"
 
 #include "path_planner/path_planner.h"
+#include "path_planner/path_prune/ramer_douglas_peucker.h"
 #include "path_planner/graph_planner/hybrid_astar_planner/node_hybrid.h"
 #include "path_planner/graph_planner/hybrid_astar_planner/astar_framework.h"
+
+#include "trajectory_planner/trajectory_optimization/optimizer_core.h"
 
 namespace rmp
 {
@@ -60,6 +63,9 @@ private:
 
   Point3d goal_;
   Points3d last_path_;
+
+  std::unique_ptr<RDPPathProcessor> pruner_;
+  std::unique_ptr<rmp::trajectory_optimization::CGOptimizer> optimizer_;
 };
 }  // namespace path_planner
 }  // namespace rmp

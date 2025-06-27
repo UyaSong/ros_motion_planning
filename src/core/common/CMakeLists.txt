@@ -24,16 +24,20 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
 )
 
+# file(GLOB math_src_fils src/math/*.cc)
 file(GLOB util_src_files src/util/*.cpp)
 file(GLOB math_src_files_cpp src/math/*.cpp)
-file(GLOB geometry_src_files src/geometry/*.cpp)
+file(GLOB geometry_common_src_files src/geometry/*.cpp)
 file(GLOB geometry_curve_src_files src/geometry/curve/*.cpp)
+file(GLOB safety_corridor_src_files src/safety_corridor/*.cpp)
 
 add_library(${PROJECT_NAME}
+  # ${math_src_fils}
   ${util_src_files}
   ${math_src_files_cpp}
-  ${geometry_src_files}
+  ${geometry_common_src_files}
   ${geometry_curve_src_files}
+  ${safety_corridor_src_files}
 )
 
 add_dependencies(${PROJECT_NAME} 
@@ -49,6 +53,11 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${CONAN_LIBS}
 )
+
+set(BUILDING_WITH_TEST Off)
+if (${BUILDING_WITH_TEST})
+  add_subdirectory(test)
+endif()
 
 # install
 install(DIRECTORY include/${PROJECT_NAME}/

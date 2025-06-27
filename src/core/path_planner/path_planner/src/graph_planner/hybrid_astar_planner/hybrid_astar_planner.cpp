@@ -25,6 +25,19 @@ namespace rmp
 {
 namespace path_planner
 {
+namespace
+{
+constexpr double kRDPParamsDelta = 0.1;        //[m]
+constexpr double kRDPParamsMaxInterval = 0.2;  //[m]
+constexpr int kCGOptimizerMaxIterations = 100;
+constexpr double kCGOptimizerLearningRate = 0.1;
+constexpr double kCGOptimizerObstacleMaxDistance = 0.3;  //[m]
+constexpr double kCGOptimizerMaxCurvature = 0.15;
+constexpr double kCGOptimizerObstacleWeight = 0.50;
+constexpr double kCGOptimizerSmoothWeight = 0.25;
+constexpr double kCGOptimizerCurvatureWeight = 0.25;
+}  // namespace
+
 /**
  * @brief Construct a new Hybrid A* object
  * @param costmap   the environment for path planning
@@ -50,6 +63,11 @@ HybridAStarPathPlanner::HybridAStarPathPlanner(costmap_2d::Costmap2DROS* costmap
 
   astar_framework_ = std::make_unique<AStarFramework<NodeHybrid>>(motion_model, info);
   astar_framework_->initialize();
+
+  pruner_ = std::make_unique<RDPPathProcessor>(kRDPParamsDelta, kRDPParamsMaxInterval);
+  optimizer_ = std::make_unique<rmp::trajectory_optimization::CGOptimizer>(
+      costmap_ros_, kCGOptimizerMaxIterations, kCGOptimizerLearningRate, kCGOptimizerObstacleMaxDistance,
+      kCGOptimizerMaxCurvature, kCGOptimizerObstacleWeight, kCGOptimizerSmoothWeight, kCGOptimizerCurvatureWeight);
 }
 
 /**
@@ -122,7 +140,19 @@ bool HybridAStarPathPlanner::plan(const Point3d& start, const Point3d& goal, Poi
       // convert to world frame
       double wx, wy;
       costmap_->mapToWorld(iter->x(), iter->y(), wx, wy);
-      path.emplace_back(wx, wy, iter->theta());
+      origin_plan.emplace_back(wx, wy, iter->theta());
+    }
+    pruner_->process(origin_plan, prune_plan);
+    if (optimizer_->run(prune_plan))
+    {
+      rmp::common::structure::Trajectory3d traj;
+      if (optimizer_->getTrajectory(traj))
+      {
+        for (const auto& pt : traj.position)
+        {
+          path.emplace_back(pt.x(), pt.y(), pt.theta());
+        }
+      }
     }
     last_path_ = path;
     return true;

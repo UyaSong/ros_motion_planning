@@ -76,11 +76,15 @@ class RobotGenerator(XMLGenerator):
             launch.append(getRobotArg("global_planner", i))
             # local planner
             launch.append(getRobotArg("local_planner", i))
+            # optimizer
+            launch.append(getRobotArg("optimizer", i))
             # robotic pose
             launch.append(getRobotArg("x_pos", i))
             launch.append(getRobotArg("y_pos", i))
             launch.append(getRobotArg("z_pos", i))
             launch.append(getRobotArg("yaw", i))
+            # location method
+            launch.append(getRobotArg("location_method", i))
 
         # create starting node
         include = RobotGenerator.createElement("include", props={"file": "$(find sim_env)/launch/app/environment_single.launch.xml"})
@@ -90,6 +94,8 @@ class RobotGenerator(XMLGenerator):
         # planner
         include.append(getRobotArg("global_planner"))
         include.append(getRobotArg("local_planner"))
+        include.append(getRobotArg("optimizer"))
+        include.append(getRobotArg("location_method"))
         # namespace
         include.append(RobotGenerator.createElement("arg", props={"name": "robot_namespace", "value": "robot$(arg agent_id)"}))
         if robots_num > 1:

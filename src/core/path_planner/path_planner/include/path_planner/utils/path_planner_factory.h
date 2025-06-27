@@ -30,6 +30,7 @@ enum PLANNER_TYPE
   GRAPH_PLANNER = 0,
   SAMPLE_PLANNER = 1,
   EVOLUTION_PLANNER = 2,
+  ROADMAP_PLANNER = 3,
 };
 
 class PathPlannerFactory

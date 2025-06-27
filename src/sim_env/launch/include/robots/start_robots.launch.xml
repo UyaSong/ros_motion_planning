@@ -3,18 +3,22 @@
 	<arg name="agent_number" default="1" />
 	<arg name="agent_id" default="1" />
 	<arg name="robot1_type" value="turtlebot3_waffle" />
-	<arg name="robot1_global_planner" value="hybrid_astar" />
+	<arg name="robot1_global_planner" value="gradient" />
 	<arg name="robot1_local_planner" value="rpp" />
+	<arg name="robot1_optimizer" value="" />
 	<arg name="robot1_x_pos" value="0.0" />
 	<arg name="robot1_y_pos" value="0.0" />
 	<arg name="robot1_z_pos" value="0.0" />
 	<arg name="robot1_yaw" value="0.0" />
+	<arg name="robot1_location_method" value="amcl" />
 	<include file="$(find sim_env)/launch/app/environment_single.launch.xml">
 		<arg name="agent_number" value="$(arg agent_number)" />
 		<arg name="agent_id" value="$(arg agent_id)" />
 		<arg name="robot" value="$(eval arg('robot' + str(arg('agent_id')) + '_type'))" />
 		<arg name="global_planner" value="$(eval arg('robot' + str(arg('agent_id')) + '_global_planner'))" />
 		<arg name="local_planner" value="$(eval arg('robot' + str(arg('agent_id')) + '_local_planner'))" />
+		<arg name="optimizer" value="$(eval arg('robot' + str(arg('agent_id')) + '_optimizer'))" />
+		<arg name="location_method" value="$(eval arg('robot' + str(arg('agent_id')) + '_location_method'))" />
 		<arg name="robot_namespace" value="robot$(arg agent_id)" />
 		<arg name="start_ns" value="false" />
 		<arg name="robot_x" value="$(eval arg('robot' + str(arg('agent_id')) + '_x_pos'))" />

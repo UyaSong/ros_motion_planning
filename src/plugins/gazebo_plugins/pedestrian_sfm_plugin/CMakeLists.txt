@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(gazebo_sfm_plugin)
+
 add_compile_options(-std=c++17)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -32,6 +33,7 @@ link_directories(
   ${catkin_LIBRARY_DIRS}
   ${GAZEBO_LIBRARY_DIRS}
 )
+
 
 catkin_package(
   INCLUDE_DIRS include

@@ -16,6 +16,7 @@
  */
 #include <pluginlib/class_list_macros.h>
 
+#include "common/util/log.h"
 #include "controller/lqr_controller.h"
 
 PLUGINLIB_EXPORT_CLASS(rmp::controller::LQRController, nav_core::BaseLocalPlanner)
@@ -108,11 +109,11 @@ void LQRController::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d
     target_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>("/target_point", 10);
     current_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/current_pose", 10);
 
-    ROS_INFO("LQR controller initialized!");
+    R_INFO << "LQR controller initialized!";
   }
   else
   {
-    ROS_WARN("LQR controller has already been initialized.");
+    R_WARN << "LQR controller has already been initialized.";
   }
 }
 
@@ -125,11 +126,11 @@ bool LQRController::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_
 {
   if (!initialized_)
   {
-    ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+    R_ERROR << "This planner has not been initialized, please call initialize() before using this planner";
     return false;
   }
 
-  ROS_INFO("Got new plan");
+  R_INFO << "Got new plan";
 
   // set new plan
   global_plan_.clear();
@@ -155,13 +156,13 @@ bool LQRController::isGoalReached()
 {
   if (!initialized_)
   {
-    ROS_ERROR("LQR controller has not been initialized");
+    R_ERROR << "LQR controller has not been initialized";
     return false;
   }
 
   if (goal_reached_)
   {
-    ROS_INFO("GOAL Reached!");
+    R_INFO << "GOAL Reached!";
     return true;
   }
   return false;
@@ -176,7 +177,7 @@ bool LQRController::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 {
   if (!initialized_)
   {
-    ROS_ERROR("LQR controller has not been initialized");
+    R_ERROR << "LQR controller has not been initialized";
     return false;
   }
 

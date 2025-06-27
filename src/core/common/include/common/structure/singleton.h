@@ -17,6 +17,8 @@
 #ifndef RMP_COMMON_STRUCTURE_SINGLETON_H_
 #define RMP_COMMON_STRUCTURE_SINGLETON_H_
 
+#include <memory>
+
 namespace rmp
 {
 namespace common
@@ -43,6 +45,31 @@ public:
     return instance;
   }
 };
+
+template<typename TSingleton>
+class HungrySingleton {
+public:
+    using TSingletonPtr = std::unique_ptr<TSingleton>;
+
+private:
+    HungrySingleton() = default;
+    virtual ~HungrySingleton() = default;
+    HungrySingleton(const HungrySingleton&) = delete;
+    HungrySingleton(HungrySingleton&&) = delete;
+    HungrySingleton& operator=(const HungrySingleton&) = delete;
+    static TSingletonPtr instance;
+
+public:
+    static TSingletonPtr& Instance() {
+        if (instance == nullptr) {
+            instance.reset(new TSingleton());
+        }
+        return instance;
+    }
+};
+
+template<typename TSingleton>
+std::unique_ptr<TSingleton> HungrySingleton<TSingleton>::instance = std::make_unique<TSingleton>();
 }  // namespace structure
 }  // namespace common
 }  // namespace rmp
