@@ -179,6 +179,7 @@ bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start, const ge
   // auto finish_time = std::chrono::high_resolution_clock::now();
   // std::chrono::duration<double> cal_time = finish_time - start_time;
   // R_INFO << "Calculation Time: " << cal_time.count() << " s";
+  ROS_INFO("expand size: %ld", expand.size());
 
   // convert path to ros plan
   if (path_found)

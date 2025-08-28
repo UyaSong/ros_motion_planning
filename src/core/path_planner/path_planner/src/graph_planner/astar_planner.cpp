@@ -60,6 +60,7 @@ AStarPathPlanner::AStarPathPlanner(costmap_2d::Costmap2DROS* costmap_ros, double
  */
 bool AStarPathPlanner::plan(const Point3d& start, const Point3d& goal, Points3d& path, Points3d& expand)
 {
+  ROS_INFO("AStar start");
   double m_start_x, m_start_y, m_goal_x, m_goal_y;
   if ((!validityCheck(start.x(), start.y(), m_start_x, m_start_y)) ||
       (!validityCheck(goal.x(), goal.y(), m_goal_x, m_goal_y)))
@@ -127,7 +128,7 @@ bool AStarPathPlanner::plan(const Point3d& start, const Point3d& goal, Points3d&
       // next node hit the boundary or obstacle
       // prevent planning failed when the current within inflation
       if ((node_new.id() < 0) || (node_new.id() >= map_size_) ||
-          (costmap_->getCharMap()[node_new.id()] >= costmap_2d::LETHAL_OBSTACLE * obstacle_factor_ &&
+          (costmap_->getCharMap()[node_new.id()] >= costmap_2d::LETHAL_OBSTACLE &&
            costmap_->getCharMap()[node_new.id()] >= costmap_->getCharMap()[current.id()]))
         continue;
 
